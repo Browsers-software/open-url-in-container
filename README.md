@@ -36,57 +36,14 @@ Also it will work with the [links on the site](ext+container:name=MyContainer&ur
 <a href="ext+container:name=MyContainer&url=https://mozilla.org">Mozilla.Org in MyContainer</a>
 ```
 
-## Launcher
+### How it works
+This extension registers urls with custom protocol `ext+container:` that are opened in Firefox to open 
+the extension embedded page opener.html#!/ext:container:<query-string>
+where query-string is "id=<container-id>&url=<url>"
+<query-string> is html-encoded
 
-Shell launcher provides a shortcut for opening links in a more user-friendly and unix-style way.
-
-```
-$ firefox-container --help
-firefox-container - open URL in a specific container in Firefox.
-
-Usage:
-	firefox-container [OPTIONS] URL
-	firefox-container URL [OPTIONS]
-	firefox-container -h|--help
-
-Where optional OPTIONS may include any combination of:
-	--COLOR		color for the container (if does not exist)
-	--ICON		icon for the container (if does not exist)
-  -n,	--name=NAME	container name (default: domain part of the URL)
-  -p,	--pin		pin tab
-  -r,	--reader	open tab in the reader mode
-
-Where COLOR is one of:
-	--blue
-	--turquoise
-	--green
-	--yellow
-	--orange
-	--red
-	--pink
-	--purple
-
-Where ICON is one of:
-	--fingerprint
-	--briefcase
-	--dollar
-	--cart
-	--circle
-	--gift
-	--vacation
-	--food
-	--fruit
-	--pet
-	--tree
-	--chill
-```
-
-### Installation example
-
-```bash
-$ curl -sL https://github.com/honsiorovskyi/open-url-in-container/raw/master/launcher.sh | sudo tee /usr/bin/firefox-container > /dev/null
-$ sudo chmod 0755 /usr/bin/firefox-container
-```
+It then uses `browser.tabs.create({cookieStoreId: <container-id>, url: <url>})` to open the website in new tab
+and closes the extension page tab itself
 
 ## Build
 
@@ -108,4 +65,4 @@ $ yarn build
 
 ## Contibutions
 
-Contibutions are very welcome. There's no specific process right now, just open your PRs/issues in this repo.
+Contributions are very welcome. There's no specific process right now, just open your PRs/issues in this repo.

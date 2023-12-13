@@ -1,123 +1,124 @@
-
 /* This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { parse, required, url, integer, boolean, fallback, oneOf, atLeastOneRequired} from './parser.js'
-
-const hashPrefix = '#ext+container:'
-const allowedContainerColors = ['blue', 'turquoise', 'green', 'yellow', 'orange', 'red', 'pink', 'purple']
-const allowedContainerIcons = ['fingerprint', 'briefcase', 'dollar', 'cart', 'circle', 'gift', 'vacation', 'food', 'fruit', 'pet', 'tree', 'chill']
-
-
-const schema = {
-	// container params
-	id: [],
-	name: [],
-	color: [fallback('yellow'), oneOf(allowedContainerColors)],
-	icon: [fallback('fingerprint'), oneOf(allowedContainerIcons)],
-
-
-	// url params
-	url: [required, url],
-	index: [integer],
-	pinned: [boolean],
-	openInReaderMode: [boolean],
-    
-    // global validators
-    __validators: [atLeastOneRequired(['id', 'name'])],
-}
+const HASH_PREFIX = '#!/ext+container:';
 
 function error(e) {
-	console.error(e)
+    console.error(e);
 
-	document.getElementById('errorBody').textContent = e;
-	document.getElementById('errorPageContainer').classList.remove('hidden');
+    document.getElementById('errorBody').textContent = e;
+    document.getElementById('errorPageContainer').classList.remove('hidden');
 }
 
 async function main() {
-	let params, container;
-	try {
-		params = parseQuery()
-	} catch(e) {
-		error(`Error opening URL: ${e}.`)
-		return
-	}
+    let params = null;
+    try {
+        params = parseQuery();
+    } catch (e) {
+        error(`Error opening URL: ${e}.`);
+        return;
+    }
+    let containerLookup = params.containerLookup;
+    let container = getContainer(containerLookup);
+    if (!container) {
+        console.warn('container does not exists');
+        return;
+    }
 
-	try {
-		container = await getContainer(params)
-	} catch (e) {
-		error(`Error getting container: ${e}.`)
-		return
-	}
-	
-	if (!container) {
-		try {
-			container = await createContainer(params)
-		} catch (e) {
-			error(`Error creating container: ${e}.`)
-			return 
-		}
-	}
-
-	try {
-		await newTab(container, params)
-	} catch (e) {
-		error(`Error creating new tab: ${e}.`)
-		return
-	}
+    try {
+        await newTab(container, params.url);
+    } catch (e) {
+        error(`Error creating new tab: ${e}.`);
+    }
 }
 
 function parseQuery() {
-	let hash = decodeURIComponent(window.location.hash)
-	if (!hash.startsWith(hashPrefix)) {
-		throw('cannot parse url')
-	}
-
-	let query = hash.substr(hashPrefix.length)
-	let params = parse(query, schema)
-
-	return params
+    let queryString = extractQueryStringFromWindowLocation();
+    return extractParametersFromQueryString(queryString);
 }
 
-async function getContainer(params) {
-	if (params.id) {
-		return await browser.contextualIdentities.get(params.id)
-	}
-	
-	let containers = await browser.contextualIdentities.query({
-		name: params.name,
-	})
-	return containers[0]
+function extractParametersFromQueryString(queryString) {
+    let searchParams = new URLSearchParams(queryString);
+
+    let containerId = searchParams.get("id");
+    let containerName = searchParams.get("name");
+    if (!containerId && !containerName) {
+        throw `at least one of id or name should be specified`;
+    }
+    let containerLookup = new ContainerLookup(containerId, containerName);
+
+    let url = searchParams.get("url");
+    if (!url) {
+        throw `"url" parameter is missing`;
+    }
+
+    return new Parameters(containerLookup, url);
 }
 
-async function createContainer(params) {
-	return await browser.contextualIdentities.create({
-		name: params.name,
-		color: params.color,
-		icon: params.icon,
-	})
+class Parameters {
+    constructor(
+        containerLookup,
+        url
+    ) {
+        this.containerLookup = containerLookup;
+        this.url = url;
+    }
 }
 
-async function newTab(container, params) {
-	let browserInfo = await browser.runtime.getBrowserInfo()
-	let currentTab = await browser.tabs.getCurrent()
-
-	let createTabParams = {
-		cookieStoreId: container.cookieStoreId,
-		url: params.url,
-		index: params.index,
-		pinned: params.pinned,
-	}
-
-	if (browserInfo.version >= 58) {
-		createTabParams.openInReaderMode = params.openInReaderMode
-	} else {
-		console.warn('openInReaderMode parameter is not supported in Firefox < 58')
-	}
-
-	await browser.tabs.create(createTabParams)
-	await browser.tabs.remove(currentTab.id)
+class ContainerLookup {
+    constructor(
+        id,
+        name
+    ) {
+        this.id = id;
+        this.name = name;
+    }
 }
 
-main()
+function extractQueryStringFromWindowLocation() {
+    let hash = decodeURIComponent(window.location.hash);
+
+    if (!hash.startsWith(HASH_PREFIX)) {
+        throw ('cannot parse url');
+    }
+
+    return hash.substring(HASH_PREFIX.length);
+}
+
+async function getContainer(containerLookup) {
+    try {
+        if (containerLookup.id) {
+            return await getContainerById(containerLookup.id);
+        } else if (containerLookup.name) {
+            return await getContainerByName(containerLookup.name);
+        }
+    } catch (e) {
+        error(`Error getting container: ${e}.`);
+    }
+}
+
+async function getContainerById(id) {
+    return await browser.contextualIdentities.get(id);
+}
+
+async function getContainerByName(name) {
+    let containers = await browser.contextualIdentities.query({
+        name: name,
+    });
+    return containers[0];
+}
+
+async function newTab(container, url) {
+    let currentTab = await browser.tabs.getCurrent();
+
+    let createTabParams = {
+        cookieStoreId: container.cookieStoreId, // container id
+        url: url
+    };
+
+    await browser.tabs.create(createTabParams);
+    await browser.tabs.remove(currentTab.id);
+}
+
+main();
