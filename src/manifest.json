@@ -1,14 +1,14 @@
 {
-  "manifest_version": 2,
+  "manifest_version": 3,
   "browser_specific_settings": {
     "gecko": {
       "id": "openincontainer@browsers.software",
       "strict_min_version": "54.0"
     }
   },
-  "name": "Open external links in existing container",
-  "description": "This extension enables support for opening links in specific containers using custom protocol handler. It works for terminal, OS shortcuts and regular HTML pages.",
-  "version": "1.0.4",
+  "name": "Open in container",
+  "description": "Provides a workaround for missing command line argument to open a link in a container. See https://bugzilla.mozilla.org/show_bug.cgi?id=1726634. Fork of https://addons.mozilla.org/et/firefox/addon/open-url-in-container/",
+  "version": "1.0.0",
   "icons": {
     "48": "icons/extension-48.png",
     "96": "icons/extension-96.png"
