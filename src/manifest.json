@@ -3,7 +3,7 @@
   "browser_specific_settings": {
     "gecko": {
       "id": "openincontainer@browsers.software",
-      "strict_min_version": "54.0"
+      "strict_min_version": "109.0"
     }
   },
   "name": "Open in container",
