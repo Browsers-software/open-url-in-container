@@ -6,7 +6,7 @@
       "strict_min_version": "109.0"
     }
   },
-  "name": "Open in container",
+  "name": "Open in Container",
   "description": "Provides a workaround for missing command line argument to open a link in a container. See https://bugzilla.mozilla.org/show_bug.cgi?id=1726634. Fork of https://addons.mozilla.org/et/firefox/addon/open-url-in-container/",
   "version": "1.0.0",
   "icons": {
